@@ -9,6 +9,8 @@ import (
 	"go-squeeze/internal/scanner"
 )
 
+const githubLink = "https://github.com/leodedsec/go-squeeze"
+
 func main() {
 	ap, err := argparser.New()
 	if err != nil {
@@ -49,8 +51,19 @@ func main() {
 		return
 	}
 
-	console.Info(fmt.Sprintf("Created: %s", saveResult.ArchivePath()))
-	console.Info(fmt.Sprintf("Size: %.2f Mb", float64(saveResult.ArchiveSize())/(1024*1024)))
-	console.Info(fmt.Sprintf("Count of archived files: %d", saveResult.ArchivedCount()))
+	tableMap := map[string]string{
+		"Created":                 saveResult.ArchivePath(),
+		"Size":                    fmt.Sprintf("%.2f Mb", float64(saveResult.ArchiveSize())/(1024*1024)),
+		"Count of archived files": fmt.Sprintf("%d", saveResult.ArchivedCount()),
+	}
+
+	console.Table(
+		fmt.Sprintf(
+			"\n%sgo-squeeze tool%s\n%ssource code: %s%s",
+			console.Color.Green, console.Color.SysReset,
+			console.Color.Green, githubLink, console.Color.SysReset,
+		),
+		tableMap,
+	)
 	console.PressEnterToExit()
 }
