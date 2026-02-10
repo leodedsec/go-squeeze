@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"go-squeeze/internal/appinfo"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,40 +39,76 @@ func New() (*ArgParser, error) {
 
 	var excludeExtensions listFlag
 
+	flag.Usage = func() {
+		out := flag.CommandLine.Output()
+
+		fmt.Fprintln(out, "Usage:")
+		fmt.Fprintln(out, "  app [OPTIONS]")
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "Options:")
+		fmt.Fprintln(out, "  -ipath PATH")
+		fmt.Fprintf(out, "        Read input files from PATH (default: %s).", currentDir)
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "  -opath PATH")
+		fmt.Fprintf(out, "        Write output archive file to PATH (default: %s).", currentDir)
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "  -recursion")
+		fmt.Fprintln(out, "        Scan subdirectories recursively (default true).")
+		fmt.Fprintln(out, "  -recursion=false")
+		fmt.Fprintln(out, "        Disable recursive scan.")
+		fmt.Fprintln(out, "  -exclude EXT[,EXT...]")
+		fmt.Fprintln(out, "        Exclude files with specified extensions.")
+		fmt.Fprintln(out)
+
+		fmt.Fprintln(out, "  -info")
+		fmt.Fprintln(out, "        Show application information and exit.")
+
+		fmt.Fprintln(out, "Examples:")
+		fmt.Fprintln(out, "  app -ipath ./src -opath ./out")
+		fmt.Fprintln(out, "  app -exclude txt,csv,exe")
+		fmt.Fprintln(out, "  app -recursion=false")
+	}
+
+	showInfo := flag.Bool("info", false, "")
+
 	inputPath := flag.String(
 		"ipath",
 		currentDir,
-		"Input path - path to directory.\n"+
-			"Type: string\n"+
-			"Default: current directory\n"+
-			"Example: -ipath(--ipath) ./test",
+		"",
 	)
+
 	outputPath := flag.String(
 		"opath",
 		currentDir,
-		"Output path - path to save.\n"+
-			"Type: string\n"+
-			"Default: current directory\n"+
-			"Example: -opath(--opath) ./test",
+		"",
 	)
+
 	recursion := flag.Bool(
 		"recursion",
 		true,
-		"Recursive scan of subdirectories.\n"+
-			"Type: boolean\n"+
-			"Default: true\n"+
-			"Example: -recursion(--recursion) false",
+		"",
 	)
+
 	flag.Var(
 		&excludeExtensions,
 		"exclude",
-		"Exclude extensions.\n"+
-			"Type: sequence of strings separated by ','\n"+
-			"Default: empty\n"+
-			"Example: -exclude(--exclude) txt,exe,csv",
+		"",
 	)
 
 	flag.Parse()
+
+	if *showInfo {
+		fmt.Printf(
+			"%s — %s\nVersion: %s\nGithub: %s",
+			appinfo.Name, appinfo.Description,
+			appinfo.Version,
+			appinfo.Github,
+		)
+		os.Exit(0)
+	}
 
 	iPath, err := filepath.Abs(*inputPath)
 	if err != nil {

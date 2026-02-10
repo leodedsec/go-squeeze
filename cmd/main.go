@@ -2,14 +2,13 @@ package main
 
 import (
 	"fmt"
+	"go-squeeze/internal/appinfo"
 	"go-squeeze/internal/archive"
 	"go-squeeze/internal/argparser"
 	"go-squeeze/internal/console"
 	"go-squeeze/internal/grouper"
 	"go-squeeze/internal/scanner"
 )
-
-const githubLink = "https://github.com/leodedsec/go-squeeze"
 
 func main() {
 	ap, err := argparser.New()
@@ -59,9 +58,9 @@ func main() {
 
 	console.Table(
 		fmt.Sprintf(
-			"\n%sgo-squeeze tool%s\n%ssource code: %s%s",
-			console.Color.Green, console.Color.SysReset,
-			console.Color.Green, githubLink, console.Color.SysReset,
+			"\n%s%s%s\n%sGithub: %s%s",
+			console.Color.Green, appinfo.Name, console.Color.SysReset,
+			console.Color.Green, appinfo.Github, console.Color.SysReset,
 		),
 		tableMap,
 	)
