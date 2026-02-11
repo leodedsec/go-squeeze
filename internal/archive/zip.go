@@ -2,21 +2,22 @@ package archive
 
 import (
 	"archive/zip"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 )
 
-type zipArchiver struct {
+type ZipArchiver struct {
 	file          *os.File
 	writer        *zip.Writer
 	archivedCount uint
 }
 
-func NewZip() (Archiver, error) {
+func NewZip() (*ZipArchiver, error) {
 	var err error
-	archiver := &zipArchiver{}
+	archiver := &ZipArchiver{}
 	archiver.file, err = os.CreateTemp("", ".zip")
 	if err != nil {
 		return nil, err
@@ -25,7 +26,7 @@ func NewZip() (Archiver, error) {
 	return archiver, nil
 }
 
-func (archiver *zipArchiver) Write(key string, path string) error {
+func (archiver *ZipArchiver) Write(key string, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -57,14 +58,21 @@ func (archiver *zipArchiver) Write(key string, path string) error {
 	return nil
 }
 
-func (archiver *zipArchiver) Save(path string) (*saveResult, error) {
-	if err := archiver.writer.Close(); err != nil {
-		_ = archiver.file.Close()
-		_ = os.Remove(archiver.file.Name())
-		return nil, err
+func (archiver *ZipArchiver) WriteWithCtx(
+	ctx context.Context,
+	key string,
+	path string,
+) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return archiver.Write(key, path)
 	}
-	if err := archiver.file.Close(); err != nil {
-		_ = os.Remove(archiver.file.Name())
+}
+
+func (archiver *ZipArchiver) Save(path string) (*SaveResult, error) {
+	if err := archiver.Close(false); err != nil {
 		return nil, err
 	}
 
@@ -79,9 +87,27 @@ func (archiver *zipArchiver) Save(path string) (*saveResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &saveResult{
+	return &SaveResult{
 		archivePath:   archivePath,
 		archivedCount: archiver.archivedCount,
 		archiveSize:   stat.Size(),
 	}, nil
+}
+
+func (archiver *ZipArchiver) Close(removeAnyway bool) error {
+	errWriterClose := archiver.writer.Close()
+	errFileClose := archiver.file.Close()
+	if errWriterClose != nil {
+		_ = os.Remove(archiver.file.Name())
+		return errWriterClose
+	}
+	if errFileClose != nil {
+		_ = os.Remove(archiver.file.Name())
+		return errFileClose
+	}
+
+	if removeAnyway {
+		_ = os.Remove(archiver.file.Name())
+	}
+	return nil
 }

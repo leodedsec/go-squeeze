@@ -1,31 +1,34 @@
 package archive
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
 
-type saveResult struct {
+type SaveResult struct {
 	archivePath   string
 	archivedCount uint
 	archiveSize   int64
 }
 
-func (sv *saveResult) ArchivePath() string {
+func (sv *SaveResult) ArchivePath() string {
 	return sv.archivePath
 }
 
-func (sv *saveResult) ArchivedCount() uint {
+func (sv *SaveResult) ArchivedCount() uint {
 	return sv.archivedCount
 }
 
-func (sv *saveResult) ArchiveSize() int64 {
+func (sv *SaveResult) ArchiveSize() int64 {
 	return sv.archiveSize
 }
 
 type Archiver interface {
 	Write(key string, path string) error
-	Save(path string) (*saveResult, error)
+	WriteWithCtx(ctx context.Context, key string, path string) error
+	Save(path string) (*SaveResult, error)
+	Close(removeAnyway bool) error
 }
 
 func GenArchiveName() string {
