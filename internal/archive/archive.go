@@ -2,8 +2,6 @@ package archive
 
 import (
 	"context"
-	"fmt"
-	"time"
 )
 
 type SaveResult struct {
@@ -25,12 +23,7 @@ func (sv *SaveResult) ArchiveSize() int64 {
 }
 
 type Archiver interface {
-	Write(key string, path string) error
-	WriteWithCtx(ctx context.Context, key string, path string) error
+	Write(ctx context.Context, prefix string, path string) error
 	Save(path string) (*SaveResult, error)
 	Close(removeAnyway bool) error
-}
-
-func GenArchiveName() string {
-	return fmt.Sprintf("%s.zip", time.Now().Format("20060102_150405"))
 }
