@@ -7,8 +7,14 @@ import (
 	"go-squeeze/internal/appinfo"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
+
+var availableModes []string = []string{
+	"zip",
+	"tar.gz",
+}
 
 type listFlag []string
 
@@ -25,6 +31,7 @@ func (f *listFlag) Set(value string) error {
 }
 
 type ArgParser struct {
+	mode              string
 	inputPath         string
 	outputPath        string
 	recursion         bool
@@ -47,6 +54,10 @@ func New() (*ArgParser, error) {
 		fmt.Fprintln(out)
 
 		fmt.Fprintln(out, "Options:")
+		fmt.Fprintln(out, "  -mode")
+		fmt.Fprintln(out, "        Type of archive. Available values: zip, tar.gz (default zip).")
+		fmt.Fprintln(out)
+
 		fmt.Fprintln(out, "  -ipath PATH")
 		fmt.Fprintf(out, "        Read input files from PATH (default: %s).", currentDir)
 		fmt.Fprintln(out)
@@ -72,31 +83,28 @@ func New() (*ArgParser, error) {
 		fmt.Fprintln(out, "  app -recursion=false")
 	}
 
-	showInfo := flag.Bool("info", false, "")
-
+	mode := flag.String("mode", "zip", "")
 	inputPath := flag.String(
 		"ipath",
 		currentDir,
 		"",
 	)
-
 	outputPath := flag.String(
 		"opath",
 		currentDir,
 		"",
 	)
-
 	recursion := flag.Bool(
 		"recursion",
 		true,
 		"",
 	)
-
 	flag.Var(
 		&excludeExtensions,
 		"exclude",
 		"",
 	)
+	showInfo := flag.Bool("info", false, "")
 
 	flag.Parse()
 
@@ -108,6 +116,10 @@ func New() (*ArgParser, error) {
 			appinfo.Github,
 		)
 		os.Exit(0)
+	}
+
+	if !slices.Contains(availableModes, *mode) {
+		return nil, fmt.Errorf("invalid mode: %s", *mode)
 	}
 
 	iPath, err := filepath.Abs(*inputPath)
@@ -132,6 +144,7 @@ func New() (*ArgParser, error) {
 		outputPath:        oPath,
 		recursion:         *recursion,
 		excludeExtensions: excludeExtensions,
+		mode:              *mode,
 	}, nil
 }
 
@@ -150,3 +163,5 @@ func (ap *ArgParser) IsRecursion() bool {
 func (ap *ArgParser) ExcludeExtensions() []string {
 	return ap.excludeExtensions
 }
+
+func (ap *ArgParser) Mode() string { return ap.mode }
