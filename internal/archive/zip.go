@@ -3,8 +3,6 @@ package archive
 import (
 	"archive/zip"
 	"context"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 )
@@ -26,31 +24,25 @@ func NewZip() (*ZipArchiver, error) {
 	return archiver, nil
 }
 
-func (archiver *ZipArchiver) Write(key string, path string) error {
+func (archiver *ZipArchiver) write(prefix string, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	stat, err := file.Stat()
+	info, err := file.Stat()
 	if err != nil {
 		return err
 	}
 
-	var name string
-	if key != "" {
-		name = fmt.Sprintf("%s/%s", key, stat.Name())
-	} else {
-		name = stat.Name()
-	}
-	writer, err := archiver.writer.Create(name)
+	entryPath := buildEntryPath(prefix, info)
+	writer, err := archiver.writer.Create(entryPath)
 	if err != nil {
 		return err
 	}
 
-	_, err = io.Copy(writer, file)
-	if err != nil {
+	if err := writeFileTo(writer, file); err != nil {
 		return err
 	}
 
@@ -58,16 +50,16 @@ func (archiver *ZipArchiver) Write(key string, path string) error {
 	return nil
 }
 
-func (archiver *ZipArchiver) WriteWithCtx(
+func (archiver *ZipArchiver) Write(
 	ctx context.Context,
-	key string,
+	prefix string,
 	path string,
 ) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
-		return archiver.Write(key, path)
+		return archiver.write(prefix, path)
 	}
 }
 
@@ -76,7 +68,7 @@ func (archiver *ZipArchiver) Save(path string) (*SaveResult, error) {
 		return nil, err
 	}
 
-	archivePath := filepath.Join(path, GenArchiveName())
+	archivePath := filepath.Join(path, genArchiveName("zip"))
 	err := os.Rename(archiver.file.Name(), archivePath)
 	if err != nil {
 		_ = os.Remove(archiver.file.Name())
