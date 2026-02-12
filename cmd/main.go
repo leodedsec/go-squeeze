@@ -31,7 +31,18 @@ func main() {
 		return
 	}
 
-	zip, err := archive.NewZip()
+	getArchiver := func(mode string) (archive.Archiver, error) {
+		switch mode {
+		case "zip":
+			return archive.NewZip()
+		case "tar.gz":
+			return archive.NewTarGz()
+		}
+		return nil, fmt.Errorf("invalid mode: %s", mode)
+
+	}
+
+	archiver, err := getArchiver(ap.Mode())
 	if err != nil {
 		console.Error(err.Error())
 		return
@@ -49,7 +60,7 @@ func main() {
 		defer close(doneCh)
 		for key, pathsArray := range byExtension {
 			for _, p := range pathsArray {
-				if err := zip.WriteWithCtx(ctx, key, p); err != nil {
+				if err := archiver.Write(ctx, key, p); err != nil {
 					select {
 					case errorCh <- err:
 					default:
@@ -64,7 +75,7 @@ func main() {
 	case <-stopCh:
 		cancel()
 		<-doneCh
-		_ = zip.Close(true)
+		_ = archiver.Close(true)
 		console.Info(
 			"Operation stopped by the user. " +
 				"The created archive file has been deleted.",
@@ -73,11 +84,11 @@ func main() {
 	case err := <-errorCh:
 		cancel()
 		<-doneCh
-		_ = zip.Close(true)
+		_ = archiver.Close(true)
 		console.Error(err.Error())
 		return
 	case <-doneCh:
-		saveResult, err := zip.Save(ap.OutputPath())
+		saveResult, err := archiver.Save(ap.OutputPath())
 		if err != nil {
 			console.Error(err.Error())
 			return
