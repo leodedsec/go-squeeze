@@ -102,17 +102,14 @@ func (archiver *TarGzArchiver) Close(removeAnyway bool) error {
 	errFileClose := archiver.file.Close()
 
 	if errTarWriterClose != nil {
-		println("tar writer close")
 		_ = os.Remove(archiver.file.Name())
 		return errTarWriterClose
 	}
 	if errGzWriterClose != nil {
-		println("gz writer close")
 		_ = os.Remove(archiver.file.Name())
 		return errGzWriterClose
 	}
 	if errFileClose != nil {
-		println("file close")
 		_ = os.Remove(archiver.file.Name())
 		return errFileClose
 	}
